@@ -147,7 +147,7 @@ export function LoginScreen({ onLogin }: Props) {
             <div className="text-center pt-2">
               <a
                 href={`https://wa.me/8801316831199?text=${encodeURIComponent(
-                  'Hello, I forgot my Student ID or PIN. Here are my details:\n\nName: \nClass: \nMobile: '
+                  'Hello, I have forgotten my Student ID or PIN. Could you please help me retrieve it?\n\nHere are my details:\n\n**Name:**\n**Class:**\n**Number:**\n\nThank you for your assistance.'
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"

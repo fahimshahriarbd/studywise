@@ -109,7 +109,7 @@ export const setProfileEditPermission = (allowed: boolean) => {
   }
 };
 
-// Per-Student Profile Editing Permission
+// Per-Student Profile Editing Permission (Individually controlled per student)
 export const getStudentProfileEditPermission = (studentId: string, studentRecord?: Student | null): boolean => {
   try {
     const individualKey = `studywise_allow_profile_edit_${studentId}`;
@@ -120,10 +120,9 @@ export const getStudentProfileEditPermission = (studentId: string, studentRecord
     if (studentRecord && typeof studentRecord.edit_allowed === 'boolean') {
       return studentRecord.edit_allowed;
     }
-    // Fall back to master switch
-    return getProfileEditPermission();
+    return false; // Locked by default until admin enables for this student
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -132,7 +131,7 @@ export const setStudentProfileEditPermission = (studentId: string, allowed: bool
     const individualKey = `studywise_allow_profile_edit_${studentId}`;
     localStorage.setItem(individualKey, String(allowed));
     window.dispatchEvent(new Event('studywise_permission_changed'));
-    // Also update student row in memory/sheet
+    // Persist to Google Sheet
     supabase.from('students').update({ edit_allowed: allowed }).eq('id', studentId).then(() => {}).catch(() => {});
   } catch {
     // ignore
@@ -176,6 +175,7 @@ export interface Student {
   address?: string;
   gender?: 'Male' | 'Female' | string;
   institution?: string;
+  guardian_phone?: string;
   blood_group?: string;
   edit_allowed?: boolean;
 }
@@ -232,6 +232,48 @@ export interface QuizResult {
   created_at: string;
 }
 
+export function calculateProfileCompleteness(student: Student | null): {
+  percent: number;
+  isComplete: boolean;
+  missingFields: string[];
+} {
+  if (!student) return { percent: 0, isComplete: false, missingFields: [] };
+
+  const fieldDefs: { key: keyof Student; label: string }[] = [
+    { key: 'name', label: 'Full Name' },
+    { key: 'class_name', label: 'Class / Grade' },
+    { key: 'subjects', label: 'Subjects' },
+    { key: 'phone', label: 'Phone Number' },
+    { key: 'email', label: 'Email Address' },
+    { key: 'address', label: 'Address' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'institution', label: 'Institution' },
+    { key: 'guardian_phone', label: "Guardian's Phone" },
+    { key: 'image_url', label: 'Profile Photo' },
+  ];
+
+  const missingFields: string[] = [];
+  let filledCount = 0;
+
+  for (const f of fieldDefs) {
+    const val = f.key === 'guardian_phone' 
+      ? (student.guardian_phone || student.blood_group) 
+      : student[f.key];
+    if (val && String(val).trim().length > 0) {
+      filledCount++;
+    } else {
+      missingFields.push(f.label);
+    }
+  }
+
+  const percent = Math.round((filledCount / fieldDefs.length) * 100);
+  return {
+    percent,
+    isComplete: percent === 100,
+    missingFields,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // GOOGLE SHEETS DIRECT DATABASE ADAPTER (ALL OTHER DATABASES DISABLED)
 // ---------------------------------------------------------------------------
@@ -249,7 +291,7 @@ function loadTableFromStorage(tableName: string): any[] {
     const raw = localStorage.getItem(`studywise_cache_${tableName}`);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
@@ -267,91 +309,8 @@ const tableCache: Record<string, any[]> = {
   quiz_results: loadTableFromStorage('quiz_results'),
 };
 
-// Seed default students if cache is totally empty
-if (tableCache.students.length === 0) {
-  tableCache.students = [
-    {
-      id: '100001',
-      name: 'Fahim Shahriar',
-      class_name: 'HSC / College',
-      subjects: 'Physics, Chemistry, Higher Math',
-      image_url: null,
-      pin: '1234',
-      created_at: getBangladeshTimeString(),
-      gender: 'Male',
-      phone: '01712345678',
-      email: 'fahim@studywise.edu',
-      address: 'Dhaka, Bangladesh',
-      institution: 'Dhaka College',
-      blood_group: 'A+',
-      edit_allowed: true,
-    },
-    {
-      id: '100002',
-      name: 'Nusrat Jahan',
-      class_name: 'HSC / College',
-      subjects: 'Biology, Chemistry, Physics',
-      image_url: null,
-      pin: '1234',
-      created_at: getBangladeshTimeString(),
-      gender: 'Female',
-      phone: '01812345678',
-      email: 'nusrat@studywise.edu',
-      address: 'Chittagong, Bangladesh',
-      institution: 'Chittagong College',
-      blood_group: 'O+',
-      edit_allowed: true,
-    },
-  ];
-  saveTableToStorage('students', tableCache.students);
-}
-
-if (tableCache.study_days.length === 0) {
-  tableCache.study_days = [
-    {
-      id: 'day-01',
-      student_id: '100001',
-      day_label: 'Day 01',
-      day_date: getBangladeshDateString(),
-      created_at: getBangladeshTimeString(),
-    },
-    {
-      id: 'day-02',
-      student_id: '100002',
-      day_label: 'Day 01',
-      day_date: getBangladeshDateString(),
-      created_at: getBangladeshTimeString(),
-    },
-  ];
-  saveTableToStorage('study_days', tableCache.study_days);
-}
-
-if (tableCache.lessons.length === 0) {
-  tableCache.lessons = [
-    {
-      id: 'les-01',
-      study_day_id: 'day-01',
-      subject: 'Physics',
-      short_note: 'Newtonian Mechanics: Laws of Motion & Momentum Conservation',
-      pdf_url: null,
-      test_enabled: true,
-      created_at: getBangladeshTimeString(),
-    },
-    {
-      id: 'les-02',
-      study_day_id: 'day-01',
-      subject: 'Chemistry',
-      short_note: 'Periodic Table & Chemical Bonding Essentials',
-      pdf_url: null,
-      test_enabled: false,
-      created_at: getBangladeshTimeString(),
-    },
-  ];
-  saveTableToStorage('lessons', tableCache.lessons);
-}
-
 const lastFetchedAt: Record<string, number> = {};
-const CACHE_DEBOUNCE_MS = 3000;
+const CACHE_DEBOUNCE_MS = 2500;
 
 function deduplicateList(list: any[]): any[] {
   if (!Array.isArray(list)) return [];
@@ -636,8 +595,8 @@ class SheetQueryBuilder implements PromiseLike<{ data: any; error: any }> {
     if (isExpired || !tableCache[this.tableName] || tableCache[this.tableName].length === 0) {
       try {
         const sheetRows = await fetchRowsFromSheet(this.tableName);
-        if (Array.isArray(sheetRows) && sheetRows.length > 0) {
-          tableCache[this.tableName] = deduplicateList([...sheetRows, ...(tableCache[this.tableName] || [])]);
+        if (Array.isArray(sheetRows)) {
+          tableCache[this.tableName] = deduplicateList(sheetRows);
           saveTableToStorage(this.tableName, tableCache[this.tableName]);
         }
         lastFetchedAt[this.tableName] = Date.now();

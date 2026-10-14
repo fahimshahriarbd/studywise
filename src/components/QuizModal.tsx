@@ -223,7 +223,7 @@ export function QuizModal({
     const unanswered = result.review.filter((r) => !r.studentChoice).length;
     const pct = result.percentage;
 
-    let title = 'Review Topic Notes!';
+    let title = '';
     if (pct >= 80) title = 'Excellent Score!';
     else if (pct >= 50) title = 'Good Effort!';
 
@@ -239,32 +239,37 @@ export function QuizModal({
     }
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-        <div className="bg-[#fcfdfd] rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-[#f8fafc]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 dark:bg-black/80 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
+        <div className="bg-[#fffefb] dark:bg-[#1f1d1b] rounded-2xl shadow-2xl border border-[#ece4d6] dark:border-[#38322c] w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#ece4d6] dark:border-[#38322c] bg-[#faf6ed] dark:bg-[#262320]">
             <div>
-              <h3 className="text-base font-bold text-slate-800">{subject} Quiz Result</h3>
-              <p className="text-xs text-slate-500">Summary of test performance</p>
+              <h3 className="text-base font-bold text-[#2c2825] dark:text-[#f2ece4]">{subject} Quiz Result</h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Summary of test performance</p>
             </div>
             <button
               onClick={handleClose}
-              className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+              className="text-stone-400 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 p-1.5 rounded-lg hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="overflow-y-auto p-5">
+          <div className="overflow-y-auto p-5 space-y-5 bg-[#fffefb] dark:bg-[#1f1d1b]">
             {/* Score Donut */}
-            <div className="flex flex-col items-center mb-5">
-              <h2 className="text-base font-bold text-slate-800 mb-4">{title}</h2>
+            <div className="flex flex-col items-center">
+              {title ? (
+                <h2 className="text-base font-bold text-[#2c2825] dark:text-[#f2ece4] mb-4">{title}</h2>
+              ) : (
+                <div className="mb-2" />
+              )}
               <div
                 className="relative w-32 h-32 rounded-full flex items-center justify-center shadow-xs"
                 style={{ background: donutBg }}
               >
-                <div className="w-24 h-24 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
-                  <div className="text-2xl font-black text-slate-800">{pct}%</div>
-                  <div className="text-xs font-semibold text-slate-500">
+                <div className="w-24 h-24 bg-[#fffefb] dark:bg-[#1f1d1b] rounded-full flex flex-col items-center justify-center shadow-inner">
+                  <div className="text-2xl font-black text-[#2c2825] dark:text-[#f2ece4]">{pct}%</div>
+                  <div className="text-xs font-semibold text-stone-500 dark:text-stone-400">
                     {result.score} / {result.total}
                   </div>
                 </div>
@@ -272,15 +277,15 @@ export function QuizModal({
             </div>
 
             {/* Breakdown */}
-            <div className="flex justify-center gap-2 mb-5 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Correct: <b>{correct}</b>
+            <div className="flex justify-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-full">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Correct: <b>{correct}</b>
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-800 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full">
-                <XCircle className="w-3.5 h-3.5 text-rose-600" /> Wrong: <b>{wrong}</b>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-800 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-2.5 py-1 rounded-full">
+                <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" /> Wrong: <b>{wrong}</b>
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
-                <MinusCircle className="w-3.5 h-3.5 text-amber-600" /> Unanswered: <b>{unanswered}</b>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 rounded-full">
+                <MinusCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" /> Unanswered: <b>{unanswered}</b>
               </span>
             </div>
 
@@ -289,38 +294,38 @@ export function QuizModal({
               {result.review.map((r, i) => (
                 <div
                   key={i}
-                  className={`rounded-xl border p-3.5 ${
+                  className={`rounded-xl border p-3.5 transition-colors ${
                     r.isCorrect
-                      ? 'border-emerald-200 bg-emerald-50/40'
-                      : 'border-rose-200 bg-rose-50/40'
+                      ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/30'
+                      : 'border-rose-200 dark:border-rose-800/60 bg-rose-50/50 dark:bg-rose-950/30'
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
                     {r.isCorrect ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
                     ) : (
-                      <XCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
+                      <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 mt-0.5 flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-slate-800">{r.question}</div>
-                      <div className="text-xs text-slate-600 mt-1">
+                      <div className="text-sm font-semibold text-[#2c2825] dark:text-[#f2ece4]">{r.question}</div>
+                      <div className="text-xs text-stone-600 dark:text-stone-300 mt-1">
                         Your choice:{' '}
                         <span
                           className={`font-semibold ${
-                            r.isCorrect ? 'text-emerald-700' : 'text-rose-700'
+                            r.isCorrect ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'
                           }`}
                         >
                           {r.studentText}
                         </span>
                       </div>
                       {!r.isCorrect && (
-                        <div className="text-xs text-slate-600 mt-0.5">
+                        <div className="text-xs text-stone-600 dark:text-stone-300 mt-0.5">
                           Correct:{' '}
-                          <span className="text-emerald-700 font-semibold">{r.correctText}</span>
+                          <span className="text-emerald-700 dark:text-emerald-300 font-semibold">{r.correctText}</span>
                         </div>
                       )}
                       {r.explanation && (
-                        <div className="text-xs text-slate-500 mt-1 italic bg-white/70 p-2 rounded-lg border border-slate-200/60">
+                        <div className="text-xs text-stone-600 dark:text-stone-300 mt-2 italic bg-[#f5efe3] dark:bg-[#292521] p-2.5 rounded-lg border border-[#ece4d6] dark:border-[#3d3731]">
                           {r.explanation}
                         </div>
                       )}
@@ -331,10 +336,10 @@ export function QuizModal({
             </div>
           </div>
 
-          <div className="px-5 py-3 border-t border-slate-200 bg-[#f8fafc]">
+          <div className="px-5 py-3.5 border-t border-[#ece4d6] dark:border-[#38322c] bg-[#faf6ed] dark:bg-[#262320]">
             <button
               onClick={handleClose}
-              className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors shadow-xs cursor-pointer"
+              className="w-full bg-gradient-to-r from-blue-600 via-sky-600 to-blue-700 hover:from-blue-700 hover:to-sky-700 active:scale-[0.99] text-white font-semibold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md cursor-pointer"
             >
               Close
             </button>
@@ -347,10 +352,10 @@ export function QuizModal({
   // Loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-        <div className="bg-[#fcfdfd] rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-8 flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-sky-500 animate-spin mb-3" />
-          <p className="text-sm font-medium text-slate-700">Loading quiz questions...</p>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 dark:bg-black/80 backdrop-blur-xs p-4 animate-in fade-in">
+        <div className="bg-[#fffefb] dark:bg-[#1f1d1b] rounded-2xl shadow-2xl border border-[#ece4d6] dark:border-[#38322c] w-full max-w-md p-8 flex flex-col items-center">
+          <Loader2 className="w-8 h-8 text-blue-600 dark:text-sky-400 animate-spin mb-3" />
+          <p className="text-sm font-medium text-stone-700 dark:text-stone-300">Loading quiz questions...</p>
         </div>
       </div>
     );
@@ -359,13 +364,13 @@ export function QuizModal({
   // Error state
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-        <div className="bg-[#fcfdfd] rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md p-8 flex flex-col items-center">
-          <XCircle className="w-8 h-8 text-rose-600 mb-3" />
-          <p className="text-sm text-slate-700 text-center font-medium">{error}</p>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 dark:bg-black/80 backdrop-blur-xs p-4 animate-in fade-in">
+        <div className="bg-[#fffefb] dark:bg-[#1f1d1b] rounded-2xl shadow-2xl border border-[#ece4d6] dark:border-[#38322c] w-full max-w-md p-8 flex flex-col items-center">
+          <XCircle className="w-8 h-8 text-rose-600 dark:text-rose-400 mb-3" />
+          <p className="text-sm text-stone-700 dark:text-stone-300 text-center font-medium">{error}</p>
           <button
             onClick={onClose}
-            className="mt-4 px-4 py-2 text-sm font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-lg cursor-pointer"
+            className="mt-4 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 hover:to-sky-700 rounded-xl cursor-pointer shadow-sm transition-all"
           >
             Close
           </button>
@@ -380,54 +385,54 @@ export function QuizModal({
   const progressPct = Math.round(((currentIndex + 1) / questions.length) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in">
-      <div className="bg-[#fcfdfd] rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 dark:bg-black/80 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in">
+      <div className="bg-[#fffefb] dark:bg-[#1f1d1b] rounded-2xl shadow-2xl border border-[#ece4d6] dark:border-[#38322c] w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200 bg-[#f8fafc]">
+        <div className="px-5 py-4 border-b border-[#ece4d6] dark:border-[#38322c] bg-[#faf6ed] dark:bg-[#262320]">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white bg-sky-500 px-2.5 py-0.5 rounded shadow-xs">
-                {subject}
+              <span className="text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-sky-600 px-2.5 py-0.5 rounded-lg shadow-xs">
+                {subject} Quiz
               </span>
               <span
-                className={`text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1 border ${
+                className={`text-xs font-bold px-2.5 py-0.5 rounded-lg flex items-center gap-1.5 border transition-colors ${
                   timeLeft <= 10
-                    ? 'text-rose-700 bg-rose-50 border-rose-200 animate-pulse'
-                    : 'text-slate-700 bg-slate-100 border-slate-200'
+                    ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 animate-pulse'
+                    : 'text-stone-700 dark:text-stone-300 bg-[#f0e8db] dark:bg-[#342e29] border-[#dfd4c2] dark:border-[#484039]'
                 }`}
               >
-                <Clock className="w-3 h-3" />
+                <Clock className="w-3.5 h-3.5" />
                 {timeLeft}s
               </span>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+              className="text-stone-400 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 p-1.5 rounded-lg hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          <h3 className="text-base font-bold text-slate-800">{subject} Quiz</h3>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
             Question {currentIndex + 1} of {questions.length}
           </p>
           {/* Progress bar */}
-          <div className="mt-2.5 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div className="mt-2.5 h-1.5 bg-[#ebdcc7] dark:bg-[#38322c] rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-sky-500 to-blue-600 transition-all duration-300 rounded-full"
+              className="h-full bg-gradient-to-r from-blue-600 via-sky-600 to-blue-700 transition-all duration-300 rounded-full"
               style={{ width: `${progressPct}%` }}
             />
           </div>
         </div>
 
         {/* Question */}
-        <div className="overflow-y-auto p-5">
+        <div className="overflow-y-auto p-5 bg-[#fffefb] dark:bg-[#1f1d1b]">
           <div className="mb-4">
             <div className="flex items-start gap-2.5 mb-4">
-              <span className="text-xs font-bold text-white bg-sky-600 px-2 py-1 rounded flex-shrink-0">
+              <span className="text-xs font-bold text-white bg-blue-600 dark:bg-sky-600 px-2.5 py-1 rounded-lg shadow-xs flex-shrink-0">
                 Q{currentIndex + 1}
               </span>
-              <div className="text-sm font-semibold text-slate-800 leading-relaxed">
+              <div className="text-sm sm:text-base font-semibold text-[#2c2825] dark:text-[#f2ece4] leading-relaxed">
                 {q.question}
               </div>
             </div>
@@ -450,8 +455,8 @@ export function QuizModal({
                   key={opt}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${
                     selected
-                      ? 'border-sky-500 bg-sky-50/80 ring-2 ring-sky-500/20 shadow-xs'
-                      : 'border-slate-200 hover:border-slate-300 hover:bg-[#f8fafc]'
+                      ? 'border-blue-600 dark:border-sky-500 bg-blue-50/90 dark:bg-sky-950/50 text-blue-950 dark:text-sky-100 ring-2 ring-blue-500/25 dark:ring-sky-500/30 shadow-xs font-semibold'
+                      : 'border-[#ece4d6] dark:border-[#38322c] bg-[#faf6ee] dark:bg-[#272320] hover:border-[#dfd3be] dark:hover:border-[#4c443c] hover:bg-[#f5efe3] dark:hover:bg-[#2f2b27] text-[#2c2825] dark:text-[#f2ece4]'
                   }`}
                 >
                   <input
@@ -460,9 +465,9 @@ export function QuizModal({
                     value={opt}
                     checked={selected}
                     onChange={() => handleAnswer(q.id, opt)}
-                    className="w-4 h-4 text-sky-600 accent-sky-600 focus:ring-sky-500"
+                    className="w-4 h-4 text-blue-600 accent-blue-600 dark:accent-sky-500 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-slate-800">{text}</span>
+                  <span className="text-sm font-medium leading-normal">{text}</span>
                 </label>
               );
             })}
@@ -470,11 +475,11 @@ export function QuizModal({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-200 bg-[#f8fafc]">
+        <div className="px-5 py-3.5 border-t border-[#ece4d6] dark:border-[#38322c] bg-[#faf6ed] dark:bg-[#262320]">
           <button
             onClick={handleSubmitClick}
             disabled={submitting}
-            className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 active:scale-[0.99] text-white font-semibold py-2.5 rounded-lg transition-all shadow-xs disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full bg-gradient-to-r from-blue-600 via-sky-600 to-blue-700 hover:from-blue-700 hover:to-sky-700 active:scale-[0.99] text-white font-semibold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
           >
             {submitting ? (
               <>

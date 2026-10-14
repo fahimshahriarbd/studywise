@@ -14,8 +14,8 @@ export const TAB_SCHEMAS: Record<string, { title: string; headers: string[]; key
   },
   students: {
     title: 'Students',
-    headers: ['Student ID', 'Full Name', 'Class / Grade', 'Subjects', 'PIN', 'Photo URL', 'Created At', 'Phone', 'Email', 'Address', 'Gender', 'Institution', 'Blood Group'],
-    keys: ['id', 'name', 'class_name', 'subjects', 'pin', 'image_url', 'created_at', 'phone', 'email', 'address', 'gender', 'institution', 'blood_group'],
+    headers: ['Student ID', 'Full Name', 'Class / Grade', 'Subjects', 'PIN', 'Photo URL', 'Created At', 'Phone', 'Email', 'Address', 'Gender', 'Institution', 'Guardian Phone', 'Edit Allowed'],
+    keys: ['id', 'name', 'class_name', 'subjects', 'pin', 'image_url', 'created_at', 'phone', 'email', 'address', 'gender', 'institution', 'guardian_phone', 'edit_allowed'],
   },
   study_days: {
     title: 'StudyDays',
@@ -40,12 +40,17 @@ export const TAB_SCHEMAS: Record<string, { title: string; headers: string[]; key
 };
 
 export async function callAppsScript(payload: any): Promise<any> {
+  const enhancedPayload = {
+    ...payload,
+    bst_time: getBangladeshTimeString(),
+  };
+
   const res = await fetch(GOOGLE_APPS_SCRIPT_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'text/plain;charset=utf-8',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(enhancedPayload),
   });
 
   if (!res.ok) {
@@ -60,11 +65,17 @@ function itemToRowArray(tableKey: string, item: any): (string | number | boolean
   if (!schema) return [];
 
   return schema.keys.map((key) => {
-    const val = item[key];
+    let val = item[key];
+    if (key === 'guardian_phone' && (!val || val === '')) {
+      val = item.blood_group || '';
+    }
+    if (key === 'created_at' && (!val || val === '')) {
+      return getBangladeshTimeString();
+    }
     if (key === 'review') {
       return typeof val === 'object' ? JSON.stringify(val) : String(val || '[]');
     }
-    if (key === 'test_enabled') {
+    if (key === 'test_enabled' || key === 'edit_allowed') {
       return val ? 'Yes' : 'No';
     }
     if (val === undefined || val === null) {
@@ -96,7 +107,7 @@ export async function fetchRowsFromSheet(tableKey: string): Promise<any[]> {
       const item: Record<string, any> = {};
       schema.keys.forEach((key, idx) => {
         const val = row[idx] ?? '';
-        if (key === 'test_enabled') {
+        if (key === 'test_enabled' || key === 'edit_allowed') {
           item[key] = val === 'true' || val === 'Yes' || val === true;
         } else if (key === 'score' || key === 'total' || key === 'percentage') {
           item[key] = val ? parseInt(String(val).replace('%', ''), 10) || 0 : 0;
@@ -108,6 +119,9 @@ export async function fetchRowsFromSheet(tableKey: string): Promise<any[]> {
           }
         } else {
           item[key] = String(val);
+          if (key === 'guardian_phone') {
+            item.blood_group = String(val);
+          }
         }
       });
       return item;

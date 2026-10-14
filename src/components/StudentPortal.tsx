@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, getStudentProfileEditPermission } from '@/lib/supabase';
+import { supabase, getStudentProfileEditPermission, calculateProfileCompleteness } from '@/lib/supabase';
 import type { Student, StudyDay, Lesson, QuizResult } from '@/lib/supabase';
 import type { SessionUser } from '@/App';
 import { formatDayDate } from '@/lib/time';
@@ -90,7 +90,16 @@ export function StudentPortal({ user, onLogout }: Props) {
 
   useEffect(() => {
     const handlePermissionChange = () => {
-      setCanEditProfile(getStudentProfileEditPermission(user.studentId, student));
+      const allowed = getStudentProfileEditPermission(user.studentId, student);
+      setCanEditProfile(allowed);
+      if (student) {
+        const comp = calculateProfileCompleteness(student);
+        if (allowed && !comp.isComplete) {
+          setShowUpdatePrompt(true);
+        } else {
+          setShowUpdatePrompt(false);
+        }
+      }
     };
     window.addEventListener('studywise_permission_changed', handlePermissionChange);
     return () => {
@@ -120,13 +129,12 @@ export function StudentPortal({ user, onLogout }: Props) {
         const allowed = getStudentProfileEditPermission(user.studentId, stud);
         setCanEditProfile(allowed);
 
-        // Check if student has permission and hasn't been prompted in this session
-        if (allowed) {
-          const promptSessionKey = `studywise_prompt_shown_${user.studentId}`;
-          const alreadyPrompted = sessionStorage.getItem(promptSessionKey);
-          if (!alreadyPrompted) {
-            setShowUpdatePrompt(true);
-          }
+        // Prompt whenever student visits the website if profile is not 100% complete and editing is enabled
+        const comp = calculateProfileCompleteness(stud);
+        if (allowed && !comp.isComplete) {
+          setShowUpdatePrompt(true);
+        } else {
+          setShowUpdatePrompt(false);
         }
       }
 
@@ -169,12 +177,10 @@ export function StudentPortal({ user, onLogout }: Props) {
   }, [loadData]);
 
   const handleSkipPrompt = () => {
-    sessionStorage.setItem(`studywise_prompt_shown_${user.studentId}`, 'true');
     setShowUpdatePrompt(false);
   };
 
   const handleAcceptPrompt = () => {
-    sessionStorage.setItem(`studywise_prompt_shown_${user.studentId}`, 'true');
     setShowUpdatePrompt(false);
     setShowProfileModal(true);
   };
@@ -198,6 +204,10 @@ export function StudentPortal({ user, onLogout }: Props) {
     user.subjects = updated.subjects;
     user.gender = updated.gender;
     updateAppFavicon(updated.gender);
+    const comp = calculateProfileCompleteness(updated);
+    if (comp.isComplete) {
+      setShowUpdatePrompt(false);
+    }
   };
 
   const formatDate = (dateStr: string) => formatDayDate(dateStr);
@@ -465,23 +475,15 @@ export function StudentPortal({ user, onLogout }: Props) {
         </div>
       </div>
 
-      {/* Search Popup Dialog docked at the bottom of the display */}
+      {/* Search Popup Dialog positioned at the top of the display */}
       {searchModalOpen && (
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) setSearchModalOpen(false);
           }}
-          className="fixed inset-0 z-50 bg-stone-900/60 dark:bg-black/80 backdrop-blur-xs flex items-end justify-center p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-stone-900/60 dark:bg-black/80 backdrop-blur-xs flex items-start justify-center p-2 sm:p-4 pt-2 sm:pt-6 overflow-hidden animate-in fade-in duration-150"
         >
-          <div className="bg-[#fffefb] dark:bg-[#23201d] rounded-t-3xl sm:rounded-2xl border-t sm:border border-[#ece4d6] dark:border-[#38322c] shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[80vh] flex flex-col mb-0 sm:mb-2 overflow-hidden animate-in slide-in-from-bottom-6 duration-200">
-            {/* Bottom sheet pull handle */}
-            <div
-              className="pt-2.5 pb-1 flex justify-center cursor-pointer select-none"
-              onClick={() => setSearchModalOpen(false)}
-              title="Close search"
-            >
-              <div className="w-10 h-1 bg-stone-300 dark:bg-stone-600 rounded-full" />
-            </div>
+          <div className="bg-[#fffefb] dark:bg-[#23201d] rounded-2xl border border-[#ece4d6] dark:border-[#38322c] shadow-2xl w-full max-w-lg max-h-[80vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-top-4 duration-200 mt-1 sm:mt-2">
 
             {/* Search Header */}
             <div className="px-4 py-3 border-b border-[#ece4d6] dark:border-[#38322c] flex items-center gap-2.5">
@@ -572,37 +574,45 @@ export function StudentPortal({ user, onLogout }: Props) {
         </div>
       )}
 
-      {/* Initial Login Profile Update Welcome Prompt Modal */}
-      {showUpdatePrompt && (
-        <div className="fixed inset-0 z-50 bg-stone-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-150">
-          <div className="bg-[#fffefb] dark:bg-[#23201d] rounded-2xl border border-stone-200 dark:border-stone-800 shadow-2xl w-full max-w-sm p-5 sm:p-6 text-center space-y-4">
-            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 rounded-2xl flex items-center justify-center mx-auto shadow-xs border border-blue-200 dark:border-blue-900">
+      {/* Profile Incomplete & Edit Enabled Prompt Modal */}
+      {showUpdatePrompt && student && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 dark:bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-[#fffefb] dark:bg-[#23201d] rounded-2xl border border-[#ece4d6] dark:border-[#38322c] shadow-2xl w-full max-w-sm p-5 sm:p-6 text-center space-y-4">
+            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-sky-300 rounded-2xl flex items-center justify-center mx-auto shadow-xs border border-blue-200 dark:border-blue-900">
               <UserCheck className="w-7 h-7" />
             </div>
 
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-[#2c2825] dark:text-[#f5f0e8]">
-                Update Your Profile
+              <h3 className="text-base sm:text-lg font-bold text-[#2c2825] dark:text-[#f2ece4]">
+                Update Profile Information
               </h3>
-              <p className="text-xs text-stone-600 dark:text-stone-400 mt-1.5 leading-relaxed">
-                Profile editing access is enabled for your account. Please keep your photo, contact, and academic information up to date.
+              <p className="text-xs text-stone-600 dark:text-stone-300 mt-2 leading-relaxed">
+                Profile editing has been enabled for your account. Your profile is not yet 100% complete ({calculateProfileCompleteness(student).percent}% completed). Please update your information.
               </p>
+
+              {/* Progress Bar */}
+              <div className="mt-3.5 bg-stone-200 dark:bg-stone-800 rounded-full h-2 overflow-hidden border border-stone-200 dark:border-stone-700">
+                <div
+                  className="bg-gradient-to-r from-blue-600 to-sky-500 h-full rounded-full transition-all duration-300"
+                  style={{ width: `${calculateProfileCompleteness(student).percent}%` }}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={handleSkipPrompt}
-                className="px-4 py-2 text-xs font-bold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2.5 text-xs font-bold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-xl transition-colors cursor-pointer"
               >
-                Skip for now
+                Skip
               </button>
               <button
                 type="button"
                 onClick={handleAcceptPrompt}
-                className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                className="px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <span>Update</span>
+                <span>Update Now</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   supabase,
-  getProfileEditPermission,
-  setProfileEditPermission,
   getStudentProfileEditPermission,
   setStudentProfileEditPermission,
   format6DigitId,
@@ -30,9 +28,9 @@ import {
   ShieldCheck,
   ShieldAlert,
   Phone,
+  PhoneCall,
   Mail,
   Building,
-  Droplet,
   Upload,
   Sun,
   Moon,
@@ -47,7 +45,6 @@ type Tab = 'students' | 'lessons' | 'questions' | 'results';
 
 export function AdminPanel({ user, onLogout }: Props) {
   const [tab, setTab] = useState<Tab>('students');
-  const [profileEditAllowed, setProfileEditAllowed] = useState(() => getProfileEditPermission());
   const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
 
   useEffect(() => {
@@ -70,12 +67,6 @@ export function AdminPanel({ user, onLogout }: Props) {
     applyTheme(nextTheme);
   };
 
-  const handleToggleProfileEdit = () => {
-    const nextVal = !profileEditAllowed;
-    setProfileEditAllowed(nextVal);
-    setProfileEditPermission(nextVal);
-  };
-
   const tabs: { id: Tab; label: string; icon: typeof Users }[] = [
     { id: 'students', label: 'Students', icon: Users },
     { id: 'lessons', label: 'Lessons', icon: BookOpen },
@@ -93,7 +84,7 @@ export function AdminPanel({ user, onLogout }: Props) {
               <GraduationCap className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800 dark:text-stone-100 leading-tight">StudyWise Admin</h2>
+              <h2 className="text-base font-bold text-slate-800 dark:text-stone-100 leading-tight">StudyWise</h2>
               <p className="text-xs text-blue-700 dark:text-sky-300 font-medium">
                 {user.name}
               </p>
@@ -101,36 +92,6 @@ export function AdminPanel({ user, onLogout }: Props) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-2.5">
-            {/* Student Profile Edit Master Toggle (Icon Driven) */}
-            <div
-              className="flex items-center gap-2 bg-[#f8fafc] dark:bg-stone-800 border border-slate-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 shadow-2xs"
-              title={profileEditAllowed ? 'Student Profile Edit: Allowed (ON)' : 'Student Profile Edit: Locked (OFF)'}
-            >
-              <button
-                type="button"
-                onClick={handleToggleProfileEdit}
-                title={profileEditAllowed ? 'Student Profile Edit: Allowed' : 'Student Profile Edit: Locked'}
-                aria-label="Toggle Student Profile Edit"
-                className="flex items-center gap-1.5 cursor-pointer focus:outline-none"
-              >
-                {profileEditAllowed ? (
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <ShieldAlert className="w-4 h-4 text-slate-400" />
-                )}
-                <span
-                  className={`relative inline-flex h-4 w-7 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                    profileEditAllowed ? 'bg-blue-600' : 'bg-slate-300 dark:bg-stone-600'
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      profileEditAllowed ? 'translate-x-3' : 'translate-x-0'
-                    }`}
-                  />
-                </span>
-              </button>
-            </div>
 
             {/* Theme Toggle Button */}
             <button
@@ -183,7 +144,7 @@ export function AdminPanel({ user, onLogout }: Props) {
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className={tab === 'students' ? 'block' : 'hidden'}>
-          <StudentsTab profileEditAllowed={profileEditAllowed} onToggleProfileEdit={handleToggleProfileEdit} />
+          <StudentsTab />
         </div>
         <div className={tab === 'lessons' ? 'block' : 'hidden'}>
           <LessonsTab />
@@ -205,13 +166,7 @@ export function AdminPanel({ user, onLogout }: Props) {
 
 // =================== STUDENTS TAB ===================
 
-function StudentsTab({
-  profileEditAllowed,
-  onToggleProfileEdit,
-}: {
-  profileEditAllowed: boolean;
-  onToggleProfileEdit: () => void;
-}) {
+function StudentsTab() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -264,31 +219,6 @@ function StudentsTab({
 
   return (
     <div className="space-y-4">
-      {/* Control Banner */}
-      <div className="bg-[#fcfdfd] rounded-xl border border-slate-200 p-3.5 shadow-2xs flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          {profileEditAllowed ? (
-            <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          ) : (
-            <ShieldAlert className="w-4 h-4 text-slate-400 flex-shrink-0" />
-          )}
-          <span className="text-xs font-semibold text-slate-700">
-            {profileEditAllowed ? 'Student Profile Editing Enabled' : 'Student Profile Editing Locked'}
-          </span>
-        </div>
-        <button
-          onClick={onToggleProfileEdit}
-          title={profileEditAllowed ? 'Lock Profile Editing' : 'Enable Profile Editing'}
-          className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
-            profileEditAllowed
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-              : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-          }`}
-        >
-          {profileEditAllowed ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
-        </button>
-      </div>
-
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -353,7 +283,7 @@ function StudentsTab({
                 </div>
 
                 {/* Extra info row */}
-                {(s.phone || s.email || s.institution || s.blood_group) && (
+                {(s.phone || s.email || s.institution || s.guardian_phone || s.blood_group) && (
                   <div className="text-[11px] text-slate-500 mt-1.5 flex flex-wrap items-center gap-2">
                     {s.phone && (
                       <span className="inline-flex items-center gap-1">
@@ -373,10 +303,10 @@ function StudentsTab({
                         {s.institution}
                       </span>
                     )}
-                    {s.blood_group && (
-                      <span className="font-bold text-rose-700 bg-rose-50 px-1 rounded border border-rose-200 inline-flex items-center gap-0.5">
-                        <Droplet className="w-2.5 h-2.5 text-rose-600" />
-                        {s.blood_group}
+                    {(s.guardian_phone || s.blood_group) && (
+                      <span className="font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 inline-flex items-center gap-1">
+                        <PhoneCall className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                        Guardian: {s.guardian_phone || s.blood_group}
                       </span>
                     )}
                   </div>
@@ -396,20 +326,26 @@ function StudentsTab({
                     }}
                     title={
                       getStudentProfileEditPermission(s.id, s)
-                        ? 'Profile Edit Permission: ALLOWED (Click to Lock)'
-                        : 'Profile Edit Permission: LOCKED (Click to Allow)'
+                        ? 'Profile Edit: Allowed (Click to Lock)'
+                        : 'Profile Edit: Locked (Click to Allow)'
                     }
                     aria-label="Toggle Student Profile Edit Permission"
-                    className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                       getStudentProfileEditPermission(s.id, s)
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                        : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100'
+                        : 'bg-slate-100 dark:bg-stone-800 text-slate-500 dark:text-stone-400 border-slate-200 dark:border-stone-700 hover:bg-slate-200'
                     }`}
                   >
                     {getStudentProfileEditPermission(s.id, s) ? (
-                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <>
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Edit Allowed</span>
+                      </>
                     ) : (
-                      <ShieldAlert className="w-3.5 h-3.5" />
+                      <>
+                        <ShieldAlert className="w-3.5 h-3.5 text-slate-400 dark:text-stone-400" />
+                        <span>Edit Locked</span>
+                      </>
                     )}
                   </button>
 
@@ -478,7 +414,7 @@ function AddStudentModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [institution, setInstitution] = useState('');
-  const [bloodGroup, setBloodGroup] = useState('');
+  const [guardianPhone, setGuardianPhone] = useState('');
   const [pin, setPin] = useState('');
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
@@ -526,7 +462,8 @@ function AddStudentModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
         email: email.trim(),
         address: address.trim(),
         institution: institution.trim(),
-        blood_group: bloodGroup.trim(),
+        guardian_phone: guardianPhone.trim(),
+        blood_group: guardianPhone.trim(),
       });
 
       if (error) {
@@ -637,22 +574,14 @@ function AddStudentModal({ onClose, onSaved }: { onClose: () => void; onSaved: (
               className={inputCls}
             />
           </Field>
-          <Field label="Blood Group">
-            <select
-              value={bloodGroup}
-              onChange={(e) => setBloodGroup(e.target.value)}
+          <Field label="Guardian's Phone">
+            <input
+              type="tel"
+              value={guardianPhone}
+              onChange={(e) => setGuardianPhone(e.target.value)}
+              placeholder="01XXXXXXXXX"
               className={inputCls}
-            >
-              <option value="">Select</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-            </select>
+            />
           </Field>
         </div>
         <Field label="Address">
@@ -750,7 +679,7 @@ function EditStudentModal({
   const [email, setEmail] = useState(student.email || '');
   const [address, setAddress] = useState(student.address || '');
   const [institution, setInstitution] = useState(student.institution || '');
-  const [bloodGroup, setBloodGroup] = useState(student.blood_group || '');
+  const [guardianPhone, setGuardianPhone] = useState(student.guardian_phone || student.blood_group || '');
   const [pin, setPin] = useState(student.pin);
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
@@ -787,7 +716,8 @@ function EditStudentModal({
           email: email.trim(),
           address: address.trim(),
           institution: institution.trim(),
-          blood_group: bloodGroup.trim(),
+          guardian_phone: guardianPhone.trim(),
+          blood_group: guardianPhone.trim(),
         })
         .eq('id', student.id);
 
@@ -885,22 +815,14 @@ function EditStudentModal({
               className={inputCls}
             />
           </Field>
-          <Field label="Blood Group">
-            <select
-              value={bloodGroup}
-              onChange={(e) => setBloodGroup(e.target.value)}
+          <Field label="Guardian's Phone">
+            <input
+              type="tel"
+              value={guardianPhone}
+              onChange={(e) => setGuardianPhone(e.target.value)}
+              placeholder="01XXXXXXXXX"
               className={inputCls}
-            >
-              <option value="">Select</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-            </select>
+            />
           </Field>
         </div>
         <Field label="Address">

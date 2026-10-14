@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { supabase, format6DigitId } from '@/lib/supabase';
 import type { Student } from '@/lib/supabase';
 import { StudentAvatar } from '@/components/StudentAvatar';
@@ -12,13 +12,12 @@ import {
   MapPin,
   KeyRound,
   Building,
-  Droplet,
+  PhoneCall,
   Loader2,
   CheckCircle2,
   AlertCircle,
   Upload,
   Trash2,
-  Lock,
   BookOpen,
   Camera,
   Crop,
@@ -41,7 +40,7 @@ export function StudentProfileModal({ student, canEdit, onClose, onUpdated }: Pr
   const [address, setAddress] = useState(student.address || '');
   const [gender, setGender] = useState<'Male' | 'Female' | string>(student.gender || 'Female');
   const [institution, setInstitution] = useState(student.institution || '');
-  const [bloodGroup, setBloodGroup] = useState(student.blood_group || '');
+  const [guardianPhone, setGuardianPhone] = useState(student.guardian_phone || student.blood_group || '');
   const [imageUrl, setImageUrl] = useState(student.image_url || '');
 
   // File and crop state
@@ -59,6 +58,23 @@ export function StudentProfileModal({ student, canEdit, onClose, onUpdated }: Pr
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentCompleteness = useMemo(() => {
+    const fields = [
+      Boolean(name.trim()),
+      Boolean(className.trim()),
+      Boolean(subjects.trim()),
+      Boolean(phone.trim()),
+      Boolean(email.trim()),
+      Boolean(address.trim()),
+      Boolean(gender.trim()),
+      Boolean(institution.trim()),
+      Boolean(guardianPhone.trim()),
+      Boolean(imageUrl && imageUrl.trim()),
+    ];
+    const filled = fields.filter(Boolean).length;
+    return Math.round((filled / fields.length) * 100);
+  }, [name, className, subjects, phone, email, address, gender, institution, guardianPhone, imageUrl]);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -157,7 +173,6 @@ export function StudentProfileModal({ student, canEdit, onClose, onUpdated }: Pr
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEdit) {
-      setError('Profile editing is currently locked by administrator.');
       return;
     }
 
@@ -204,7 +219,8 @@ export function StudentProfileModal({ student, canEdit, onClose, onUpdated }: Pr
         address: address.trim(),
         gender: gender.trim(),
         institution: institution.trim(),
-        blood_group: bloodGroup.trim(),
+        guardian_phone: guardianPhone.trim(),
+        blood_group: guardianPhone.trim(),
         image_url: imageUrl.trim() || null,
         pin: finalPin,
       };
@@ -274,15 +290,23 @@ export function StudentProfileModal({ student, canEdit, onClose, onUpdated }: Pr
             </button>
           </div>
 
-          {/* Lock notice if editing is disabled by Admin */}
-          {!canEdit && (
-            <div className="mx-5 mt-4 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-200">
-              <Lock className="w-4 h-4 flex-shrink-0 text-amber-600" />
-              <span>Profile editing is locked by admin. Changes cannot be submitted.</span>
+          {/* Profile Completeness Indicator */}
+          <div className="px-5 py-2.5 bg-[#fbf8ee] dark:bg-[#25221f] border-b border-[#ece4d6] dark:border-[#38322c] flex items-center justify-between gap-3 text-xs">
+            <span className="font-semibold text-stone-700 dark:text-stone-300">
+              Profile Completed:{' '}
+              <span className={`font-bold ${currentCompleteness === 100 ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-sky-400'}`}>
+                {currentCompleteness}%
+              </span>
+            </span>
+            <div className="w-28 sm:w-36 bg-stone-200 dark:bg-stone-700 rounded-full h-2 overflow-hidden border border-stone-300/60 dark:border-stone-600">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  currentCompleteness === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-blue-600 to-sky-500'
+                }`}
+                style={{ width: `${currentCompleteness}%` }}
+              />
             </div>
-          )}
-
-          {/* Form Container with unified natural scrolling for Photo, ID, and Inputs */}
+          </div>
           <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 max-h-[78vh] overflow-y-auto">
             {/* Photo Upload & 6-Digit ID Section (Scrolls naturally with the form) */}
             <div className="pb-3 text-center border-b border-stone-200 dark:border-stone-800">
@@ -477,25 +501,17 @@ export function StudentProfileModal({ student, canEdit, onClose, onUpdated }: Pr
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1 flex items-center gap-1">
-                <Droplet className="w-3.5 h-3.5 text-slate-400" />
-                Blood Group
+                <PhoneCall className="w-3.5 h-3.5 text-slate-400" />
+                Guardian's Phone
               </label>
-              <select
-                value={bloodGroup}
-                onChange={(e) => setBloodGroup(e.target.value)}
+              <input
+                type="tel"
+                value={guardianPhone}
+                onChange={(e) => setGuardianPhone(e.target.value)}
                 disabled={saving || !canEdit}
+                placeholder="01XXXXXXXXX"
                 className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-60"
-              >
-                <option value="">Select Blood Group</option>
-                <option value="A+">A+</option>
-                <option value="A-">A-</option>
-                <option value="B+">B+</option>
-                <option value="B-">B-</option>
-                <option value="O+">O+</option>
-                <option value="O-">O-</option>
-                <option value="AB+">AB+</option>
-                <option value="AB-">AB-</option>
-              </select>
+              />
             </div>
           </div>
 
